@@ -159,7 +159,7 @@ const Header = () => {
     <header id="header" class="header">
       <div class="header-container">
         <h1 class="logo">
-          <a href="/">
+          <a href="/javascript-movie-review">
             <img src="./images/logo.png" alt="MovieList" />
           </a>
         </h1>
@@ -333,12 +333,6 @@ class App {
   async loadPopularMovies() {
     const movies = await fetchPopularMovies();
     store.setState({ movies });
-    if (movies.length) {
-      const $banner = document.querySelector("#banner");
-      if ($banner) {
-        $banner.style.backgroundImage = `url(${"https://image.tmdb.org/t/p/original"}${movies[0].backdrop_path})`;
-      }
-    }
   }
   render() {
     const state = store.getState();
@@ -356,10 +350,14 @@ class App {
         ${Footer()}
       </div>
     `;
-    this.mount();
+    this.mount(state);
   }
-  mount() {
+  mount(state) {
     attachMoreButtonEvent();
+    const $banner = document.querySelector("#banner");
+    if (state.movies.length && $banner) {
+      $banner.style.backgroundImage = `url(${"https://image.tmdb.org/t/p/original"}${state.movies[0].backdrop_path})`;
+    }
     window.addEventListener("scroll", () => {
       const $header = document.querySelector("#header");
       if ($header) {
