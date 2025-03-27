@@ -46,52 +46,6 @@ const ERROR_MESSAGES = Object.freeze({
   NO_RESULT: "검색 결과가 없습니다.",
   MOVIE_FETCH_FAILED: "영화 정보를 불러오는 데 실패했습니다. 새로고침 해 주세요."
 });
-const fetchPopularMovies = async (page = 1) => {
-  try {
-    const response = await fetch(
-      `${"https://api.themoviedb.org/3"}/movie/popular?language=ko-KR&page=${page}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzNjM3Yjc0MTQ4Y2MwYTE1MTJiOGRmNzQxZWEwNmY3OCIsIm5iZiI6MTYyODg0NjUzOC4zNDA5OTk4LCJzdWIiOiI2MTE2MzljYTk5ZDVjMzAwNDZlZmE2YzQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.9iAbnC3Evw7Zj9EkIraokKWra58lKs3iYZe63V45MKI"}`
-        }
-      }
-    );
-    if (!response.ok) {
-      throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
-    }
-    const data = await response.json();
-    return data.results;
-  } catch (error) {
-    if (error instanceof Error) {
-      alert(error.message);
-    }
-    return [];
-  }
-};
-const fetchSearchedMovies = async (query, page = 1) => {
-  try {
-    const response = await fetch(
-      `${"https://api.themoviedb.org/3"}/search/movie?query=${query}&include_adult=false&language=ko-KR&page=${page}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzNjM3Yjc0MTQ4Y2MwYTE1MTJiOGRmNzQxZWEwNmY3OCIsIm5iZiI6MTYyODg0NjUzOC4zNDA5OTk4LCJzdWIiOiI2MTE2MzljYTk5ZDVjMzAwNDZlZmE2YzQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.9iAbnC3Evw7Zj9EkIraokKWra58lKs3iYZe63V45MKI"}`
-        }
-      }
-    );
-    if (!response.ok) {
-      throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      alert(error.message);
-    }
-    return null;
-  }
-};
 class Store {
   constructor(initialState) {
     __publicField(this, "state");
@@ -114,15 +68,73 @@ class Store {
 const store = new Store({
   movies: [],
   query: "",
-  searchedMoviesLength: 0
+  searchedMoviesLength: 0,
+  isLoading: false,
+  errorMessage: ""
 });
-const SearchBar = () => {
+const fetchPopularMovies = async (page = 1) => {
+  try {
+    const response = await fetch(
+      `${"https://api.themoviedb.org/3"}/movie/popular?language=ko-KR&page=${page}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzNjM3Yjc0MTQ4Y2MwYTE1MTJiOGRmNzQxZWEwNmY3OCIsIm5iZiI6MTYyODg0NjUzOC4zNDA5OTk4LCJzdWIiOiI2MTE2MzljYTk5ZDVjMzAwNDZlZmE2YzQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.9iAbnC3Evw7Zj9EkIraokKWra58lKs3iYZe63V45MKI"}`
+        }
+      }
+    );
+    if (!response.ok) {
+      throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
+    }
+    const data = await response.json();
+    return data.results;
+  } catch (error) {
+    if (error instanceof Error) {
+      store.setState({ errorMessage: error.message });
+    }
+    return [];
+  }
+};
+const fetchSearchedMovies = async (query, page = 1) => {
+  try {
+    const response = await fetch(
+      `${"https://api.themoviedb.org/3"}/search/movie?query=${query}&include_adult=false&language=ko-KR&page=${page}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzNjM3Yjc0MTQ4Y2MwYTE1MTJiOGRmNzQxZWEwNmY3OCIsIm5iZiI6MTYyODg0NjUzOC4zNDA5OTk4LCJzdWIiOiI2MTE2MzljYTk5ZDVjMzAwNDZlZmE2YzQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.9iAbnC3Evw7Zj9EkIraokKWra58lKs3iYZe63V45MKI"}`
+        }
+      }
+    );
+    if (!response.ok) {
+      throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      store.setState({ errorMessage: error.message });
+    }
+    return null;
+  }
+};
+function SearchBarRender() {
+  const params = new URLSearchParams(window.location.search);
+  const queryValue = params.get("query") || "";
   return (
     /* html */
     `
     <div class="search-bar-container">
-      <form id="search-form" class="search-form" data-testid='search-form'>
-        <input type="text" name="query" data-testid='search-input' class="search-bar" placeholder="검색어를 입력하세요" autocomplete="off" />
+      <form id="search-form" class="search-form" data-testid="search-form">
+        <input 
+          type="text" 
+          name="query" 
+          value="${queryValue}" 
+          data-testid="search-input" 
+          class="search-bar" 
+          placeholder="검색어를 입력하세요" 
+          autocomplete="off" 
+        />
         <button type="submit" class="search-button">
           <img src="./images/search.png" alt="search" width="16" height="16" />
         </button>
@@ -130,8 +142,8 @@ const SearchBar = () => {
     </div>
   `
   );
-};
-function attachSearchEvent() {
+}
+function SearchBarMount() {
   const $searchForm = document.querySelector("#search-form");
   if ($searchForm) {
     $searchForm.addEventListener("submit", async (event) => {
@@ -139,6 +151,9 @@ function attachSearchEvent() {
       const formData = new FormData($searchForm);
       const query = formData.get("query");
       if (!query) return;
+      const url = new URL(window.location);
+      url.searchParams.set("query", query);
+      window.history.pushState({}, "", url);
       const searchedMovies = await fetchSearchedMovies(query);
       if (searchedMovies) {
         store.setState({
@@ -147,12 +162,10 @@ function attachSearchEvent() {
           searchedMoviesLength: searchedMovies.total_results
         });
       }
-      $searchForm.reset();
     });
   }
 }
-const Header = () => {
-  setTimeout(() => attachSearchEvent(), 0);
+function HeaderRender() {
   return (
     /* html */
     `
@@ -163,14 +176,17 @@ const Header = () => {
             <img src="./images/logo.png" alt="MovieList" />
           </a>
         </h1>
-        ${SearchBar()}
+        ${SearchBarRender()}
         <div class="empty"></div>
       </div>
     </header>
   `
   );
-};
-const Footer = () => {
+}
+function HeaderMount() {
+  SearchBarMount();
+}
+function FooterRender() {
   return (
     /*html*/
     `
@@ -182,8 +198,8 @@ const Footer = () => {
     </footer>
   `
   );
-};
-const Banner = ({ vote_average, title }) => {
+}
+function BannerRender({ vote_average, title }) {
   return (
     /* html */
     `
@@ -202,8 +218,8 @@ const Banner = ({ vote_average, title }) => {
     </div>
   `
   );
-};
-const SkeletonBanner = () => {
+}
+function SkeletonBannerRender() {
   return (
     /* html */
     `
@@ -214,8 +230,8 @@ const SkeletonBanner = () => {
     </div>
   `
   );
-};
-const ListTitle = ({ query }) => {
+}
+function ListTitleRender({ query }) {
   const title = query ? `"${query}" 검색 결과` : "지금 인기 있는 영화";
   return (
     /* html */
@@ -223,8 +239,8 @@ const ListTitle = ({ query }) => {
     <h2 id="list-title">${title}</h2>
   `
   );
-};
-const MovieItem = ({ poster_path, title, vote_average }) => {
+}
+function MovieItemRender({ poster_path, title, vote_average }) {
   const imageUrl = poster_path ? `${"https://image.tmdb.org/t/p/w500"}${poster_path}` : "./images/logo.png";
   return (
     /* html */
@@ -243,24 +259,29 @@ const MovieItem = ({ poster_path, title, vote_average }) => {
     </li>
   `
   );
-};
-const MoreButton = () => {
+}
+function MoreButtonRender() {
   return (
     /* html */
     `
     <button id="more-button" class="primary more" data-testid="more-button">더 보기</button>
   `
   );
-};
-function attachMoreButtonEvent() {
+}
+function MoreButtonMount() {
   const $button = document.querySelector("#more-button");
   if ($button) {
     $button.addEventListener("click", async () => {
       const state = store.getState();
       const currentPage = Math.floor(state.movies.length / MOVIE_COUNT.UNIT) + 1;
+      store.setState({ ...state, isLoading: true });
       if (!state.query) {
         const newMovies = await fetchPopularMovies(currentPage);
-        store.setState({ movies: [...state.movies, ...newMovies] });
+        store.setState({
+          ...store.getState(),
+          movies: [...state.movies, ...newMovies],
+          isLoading: false
+        });
         if (state.movies.length >= MOVIE_COUNT.MAX_PAGE * MOVIE_COUNT.UNIT) {
           $button.remove();
         }
@@ -269,7 +290,11 @@ function attachMoreButtonEvent() {
           state.query,
           currentPage
         );
-        store.setState({ movies: [...state.movies, ...newMoviesData.results] });
+        store.setState({
+          ...store.getState(),
+          movies: [...state.movies, ...newMoviesData.results],
+          isLoading: false
+        });
         if (state.movies.length >= state.searchedMoviesLength) {
           $button.remove();
         }
@@ -277,7 +302,7 @@ function attachMoreButtonEvent() {
     });
   }
 }
-const SkeletonMovieItem = () => {
+function SkeletonMovieItemRender() {
   return (
     /* html */
     `
@@ -290,12 +315,17 @@ const SkeletonMovieItem = () => {
     </li>
   `
   );
-};
-const MovieList = ({ movies, query, searchedMoviesLength }) => {
+}
+function MovieListRender({
+  movies,
+  query,
+  searchedMoviesLength,
+  isLoading
+}) {
   const showMoreButton = !query || movies.length < searchedMoviesLength;
   let movieContent = "";
-  if (movies.length === 0 && !query) {
-    movieContent = new Array(MOVIE_COUNT.UNIT).fill(0).map(() => SkeletonMovieItem()).join("");
+  if (isLoading) {
+    movieContent = new Array(MOVIE_COUNT.UNIT).fill(0).map(() => SkeletonMovieItemRender()).join("");
   } else if (movies.length === 0 && query) {
     movieContent = `<div></div>
                     <div></div>
@@ -304,56 +334,108 @@ const MovieList = ({ movies, query, searchedMoviesLength }) => {
                       <h2 data-testid='no-result-message'>${ERROR_MESSAGES.NO_RESULT}</h2>
                     </div>`;
   } else {
-    movieContent = movies.map((movie) => MovieItem(movie)).join("");
+    movieContent = movies.map((movie) => MovieItemRender(movie)).join("");
   }
   return (
     /* html */
     `
     <main>
       <section>
-        ${ListTitle({ query })}
+        ${ListTitleRender({ query })}
         <ul id="movie-list" class="thumbnail-list" data-testid="movie-list">
           ${movieContent}
         </ul>
-        ${showMoreButton ? MoreButton() : ""}
+        ${showMoreButton ? MoreButtonRender() : ""}
       </section>
     </main>
   `
   );
-};
+}
+function MovieListMount() {
+  MoreButtonMount();
+}
+async function initializeMovieDomain() {
+  const state = store.getState();
+  if (state.movies.length === 0) {
+    store.setState({ ...state, isLoading: true });
+    const movies = await fetchPopularMovies();
+    store.setState({ ...store.getState(), movies, isLoading: false });
+  }
+}
+function renderMovieDomain() {
+  const state = store.getState();
+  return MovieListRender({
+    movies: state.movies,
+    query: state.query,
+    searchedMoviesLength: state.searchedMoviesLength,
+    isLoading: state.isLoading
+  });
+}
+function mountMovieDomain() {
+  MovieListMount();
+}
+async function syncSearchStateWithURL() {
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get("query");
+  store.setState({ ...store.getState(), isLoading: true });
+  if (query) {
+    const searchedMovies = await fetchSearchedMovies(query);
+    if (searchedMovies) {
+      store.setState({
+        movies: searchedMovies.results,
+        query,
+        searchedMoviesLength: searchedMovies.total_results,
+        isLoading: false
+      });
+    } else {
+      store.setState({ ...store.getState(), isLoading: false });
+    }
+  } else {
+    store.setState({
+      ...store.getState(),
+      movies: [],
+      query: "",
+      searchedMoviesLength: 0,
+      isLoading: true
+    });
+    await initializeMovieDomain();
+  }
+}
 class App {
   constructor($target) {
     this.$target = $target;
     store.subscribe(() => this.render());
-    if (store.getState().movies.length === 0) {
-      this.loadPopularMovies();
-    }
-    this.render();
+    this.toastTimeout = null;
   }
-  async loadPopularMovies() {
-    const movies = await fetchPopularMovies();
-    store.setState({ movies });
+  async initialize() {
+    await syncSearchStateWithURL();
+    this.render();
   }
   render() {
     const state = store.getState();
     this.$target.innerHTML = `
       <div id="wrap">
-        ${Header()}
-        ${!state.query ? state.movies.length ? Banner(state.movies[0]) : SkeletonBanner() : ""}
+        ${HeaderRender()}
+        ${!state.query ? state.movies.length ? BannerRender(state.movies[0]) : SkeletonBannerRender() : ""}
         <div class="container">
-          ${MovieList({
-      movies: state.movies,
-      query: state.query,
-      searchedMoviesLength: state.searchedMoviesLength
-    })}
+          ${renderMovieDomain()}
         </div>
-        ${Footer()}
+        ${FooterRender()}
       </div>
+      ${state.errorMessage ? `<div class="toast">${state.errorMessage}</div>` : ""}
     `;
-    this.mount(state);
+    this.mount();
+    if (state.errorMessage && !this.toastTimeout) {
+      this.toastTimeout = setTimeout(() => {
+        store.setState({ ...store.getState(), errorMessage: null });
+        this.toastTimeout = null;
+      }, 3e3);
+    }
   }
-  mount(state) {
-    attachMoreButtonEvent();
+  mount() {
+    HeaderMount();
+    mountMovieDomain();
+    const state = store.getState();
     const $banner = document.querySelector("#banner");
     if (state.movies.length && $banner) {
       $banner.style.backgroundImage = `url(${"https://image.tmdb.org/t/p/original"}${state.movies[0].backdrop_path})`;
@@ -370,5 +452,9 @@ class App {
     });
   }
 }
-const $app = document.querySelector("#app");
-new App($app);
+const $app = document.getElementById("app");
+const app = new App($app);
+app.initialize();
+window.addEventListener("popstate", async () => {
+  await syncSearchStateWithURL();
+});
