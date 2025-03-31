@@ -182,7 +182,7 @@ button.primary {
 
 #wrap {
   position: relative;
-  min-width: 1440px;
+  min-width: 1300px;
   background-color: var(--color-bluegray-100);
 }
 
@@ -211,6 +211,34 @@ h1.logo {
   justify-content: center;
   align-items: center;
   gap: 30px;
+}
+
+@media screen and (max-width: 1440px) {
+  #wrap {
+    min-width: 1250px;
+  }
+}
+
+@media screen and (max-width: 1300px) {
+  #wrap {
+    min-width: 850px;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  #wrap {
+    min-width: 550px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  #wrap {
+    min-width: 300px;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
 }
 :root {
   --color-white: #ffffff;
@@ -303,7 +331,7 @@ button.primary {
 }
 #wrap {
   position: relative;
-  min-width: 1440px;
+  min-width: 1300px;
   background-color: var(--color-bluegray-100);
 }
 #wrap h2 {
@@ -328,80 +356,29 @@ h1.logo {
   align-items: center;
   gap: 30px;
 }
-/* modal.css */
-body.modal-open {
-  overflow: hidden;
+@media screen and (max-width: 1440px) {
+  #wrap {
+    min-width: 1250px;
+  }
 }
-.modal-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* 반투명 배경을 위해 설정 */
-  backdrop-filter: blur(10px); /* 블러 효과 적용 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-  visibility: hidden; /* 모달이 기본적으로 보이지 않도록 설정 */
-  opacity: 0;
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
+@media screen and (max-width: 1300px) {
+  #wrap {
+    min-width: 850px;
+  }
 }
-.modal-background.active {
-  visibility: visible;
-  opacity: 1;
+@media screen and (max-width: 900px) {
+  #wrap {
+    min-width: 550px;
+  }
 }
-.modal {
-  background-color: var(--color-bluegray-90);
-  padding: 20px;
-  border-radius: 16px;
-  color: white;
-  z-index: 2;
-  position: relative;
-  width: 1000px;
-}
-.close-modal {
-  position: absolute;
-  margin: 0;
-  padding: 0;
-  top: 24px;
-  right: 24px;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-}
-.modal-container {
-  display: flex;
-}
-.modal-image img {
-  width: 380px;
-  border-radius: 16px;
-}
-.modal-description {
-  width: 100%;
-  padding: 8px;
-  margin-left: 16px;
-  line-height: 1.6rem;
-}
-.modal-description .rate > img {
-  position: relative;
-  top: 5px;
-}
-.modal-description > *:not(:last-child) {
-  margin-bottom: 8px;
-}
-.modal-description h2 {
-  font-size: 2rem;
-  margin: 0 0 8px;
-}
-.detail {
-  max-height: 430px;
-  overflow-y: auto;
+@media screen and (max-width: 600px) {
+  #wrap {
+    min-width: 300px;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
 }
 /* http://meyerweb.com/eric/tools/css/reset/
    v2.0 | 20110126
@@ -571,49 +548,74 @@ table {
   font-size: 14px;
 }
 .header {
-    position: sticky;
-    top: 0;
-    z-index: 9999;
-    width: 100%;
-    padding: 40px calc(50% - 640px);
-    transition: backdrop-filter 0.3s ease;
-  }
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  padding: 40px calc(50% - 640px);
+  transition: backdrop-filter 0.3s ease;
+}
 .header.scrolled {
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
 .header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1280px;
-  }
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1280px;
+}
 .search-bar-container {
-    width: 100%;
-    max-width: 525px;
-    position: relative;
-  }
+  width: 100%;
+  max-width: 525px;
+  position: relative;
+}
 .search-bar {
-    background-color: transparent;
-    border: 2px solid var(--color-white);
-    border-radius: 32px;
-    padding: 6px 16px;
+  background-color: transparent;
+  border: 2px solid var(--color-white);
+  border-radius: 32px;
+  padding: 6px 16px;
+  color: var(--color-white);
+  font-size: 1rem;
+  width: 100%;
+  outline: none;
+
+  &::placeholder {
     color: var(--color-white);
-    font-size: 1rem;
-    width: 100%;
-    outline: none;
-  
-    &::placeholder {
-      color: var(--color-white);
-    }
   }
+}
 .search-button {
-    all: unset;
-    position: absolute;
-    top: 8px;
-    right: 16px;
-    cursor: pointer;
+  all: unset;
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  cursor: pointer;
+}
+/* TODO: 헤더 */
+@media screen and (max-width: 1300px) {
+  .header {
+    padding: 28px calc(50% - 640px);
   }
+
+  .header-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+@media screen and (max-width: 900px) {
+  .search-bar-container {
+    max-width: 400px;
+  }
+}
+@media screen and (max-width: 700px) {
+  .search-bar-container {
+    max-width: 350px;
+  }
+}
+@media screen and (max-width: 500px) {
+  .search-bar-container {
+    max-width: 300px;
+  }
+}
 .background-container {
   position: relative;
   background-position: center center;
@@ -665,6 +667,34 @@ span.rate-value {
   font-size: 3rem;
   font-weight: bold;
 }
+@media screen and (max-width: 1440px) {
+  .top-rated-container {
+    max-width: 1000px;
+  }
+}
+@media screen and (max-width: 1300px) {
+  .top-rated-container {
+    max-width: 750px;
+  }
+
+  .background-container {
+    margin-top: -180px;
+  }
+}
+@media screen and (max-width: 900px) {
+  .top-rated-container {
+    padding-top: 30px;
+    min-width: 500px;
+  }
+  .background-container {
+    height: 350px;
+    margin-top: -155px;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+}
 footer.footer {
   min-height: 180px;
   background-color: var(--color-bluegray-80);
@@ -688,6 +718,7 @@ footer.footer p:not(:last-child) {
   height: 300px;
   border-radius: 8px;
   object-fit: contain;
+  background-color: var(--color-bluegray-80);
 }
 .item {
   user-select: none;
@@ -712,6 +743,33 @@ p.rate > span {
 }
 .primary.more {
   width: 100%;
+}
+.not-found-movie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+}
+@media screen and (max-width: 1440px) {
+  .thumbnail-list {
+    grid-template-columns: repeat(4, 200px);
+  }
+}
+@media screen and (max-width: 1300px) {
+  .thumbnail-list {
+    grid-template-columns: repeat(3, 200px);
+  }
+}
+@media screen and (max-width: 900px) {
+  .thumbnail-list {
+    grid-template-columns: repeat(2, 200px);
+  }
+}
+@media screen and (max-width: 600px) {
+  .thumbnail-list {
+    grid-template-columns: repeat(1, 200px);
+  }
 }
 .skeleton-item {
   animation: pulse 1.5s infinite;
@@ -779,5 +837,196 @@ p.rate > span {
   }
   100% {
     transform: translateX(150%);
+  }
+}
+/* modal.css */
+body.modal-open {
+  overflow: hidden;
+}
+.modal-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* 반투명 배경을 위해 설정 */
+  backdrop-filter: blur(10px); /* 블러 효과 적용 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  visibility: hidden; /* 모달이 기본적으로 보이지 않도록 설정 */
+  opacity: 0;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal-background.active {
+  visibility: visible;
+  opacity: 1;
+}
+.modal {
+  background-color: var(--color-bluegray-90);
+  padding: 20px;
+  border-radius: 16px;
+  color: white;
+  z-index: 2;
+  position: relative;
+  width: 1000px;
+  min-height: 600px;
+}
+.close-modal {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  top: 24px;
+  right: 24px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+.modal-container {
+  display: flex;
+}
+.modal-container hr {
+  width: 100%;
+  height: 1px;
+  background-color: var(--color-bluegray-30);
+  border: none;
+}
+.modal-image img {
+  width: 380px;
+  border-radius: 16px;
+}
+.modal-description {
+  width: 100%;
+  padding: 8px;
+  margin-left: 16px;
+  line-height: 1.6rem;
+}
+.modal-description .rate {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.modal-description .rate__title {
+  color: var(--color-ffffff);
+}
+.modal-description .rate__bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.rate__bar > img {
+  width: 16px;
+}
+.rate__bar > span {
+  margin-top: 2px;
+}
+.modal-description .rate > img {
+  position: relative;
+  top: 5px;
+}
+.modal-description > *:not(:last-child) {
+  margin-bottom: 8px;
+}
+.modal-description h2 {
+  font-size: 2rem;
+  margin: 0 0 8px;
+}
+.modal-description .score {
+  display: flex;
+  flex-direction: column;
+}
+.modal-description .score h3 {
+  font-size: 1.2rem;
+  margin: 4px 0 12px 0;
+}
+.score__container {
+  display: flex;
+  gap: 12px;
+}
+.score__stars {
+  cursor: pointer;
+}
+.score__description {
+  font-size: 1.1rem;
+}
+.score__description-modal-description -score {
+  color: var(--color-bluegray-30);
+}
+.modal-description .detail {
+  max-height: 430px;
+  overflow-y: auto;
+}
+.modal-description .detail h3 {
+  font-size: 1.2rem;
+  margin: 4px 0 12px 0;
+}
+@media screen and (max-width: 1300px) {
+  .modal {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+  }
+
+  .modal-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .modal-image img {
+    width: 200px;
+  }
+
+  .modal-description {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-self: center;
+  }
+
+  .modal-description__title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .category {
+    width: 100%;
+    text-align: center;
+  }
+
+  .modal-description .rate {
+    display: flex;
+    justify-content: center;
+  }
+
+  .modal-description .score {
+    width: 100%;
+  }
+
+  .modal-description .detail {
+    width: 100%;
+  }
+}
+@media screen and (max-width: 900px) {
+  .modal-image img {
+    display: none;
+  }
+  .modal-description .score {
+    align-items: center;
+  }
+
+  .score__container {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .modal-description .detail {
+    justify-items: center;
   }
 }

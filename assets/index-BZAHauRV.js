@@ -46,6 +46,14 @@ const ERROR_MESSAGES = Object.freeze({
   NO_RESULT: "검색 결과가 없습니다.",
   MOVIE_FETCH_FAILED: "영화 정보를 불러오는 데 실패했습니다. 새로고침 해 주세요."
 });
+const SCORE_MESSAGES = Object.freeze({
+  2: "최악이예요",
+  4: "별로예요",
+  6: "보통이에요",
+  8: "재미있어요",
+  10: "명작이에요",
+  CHOICE: "별점을 선택해주세요"
+});
 class Store {
   constructor(initialState) {
     __publicField(this, "state");
@@ -118,6 +126,29 @@ const fetchSearchedMovies = async (query, page = 1) => {
     return null;
   }
 };
+const fetchMovieDetail = async (movieId) => {
+  try {
+    const response = await fetch(
+      `${"https://api.themoviedb.org/3"}/movie/${movieId}?language=ko-KR`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzNjM3Yjc0MTQ4Y2MwYTE1MTJiOGRmNzQxZWEwNmY3OCIsIm5iZiI6MTYyODg0NjUzOC4zNDA5OTk4LCJzdWIiOiI2MTE2MzljYTk5ZDVjMzAwNDZlZmE2YzQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.9iAbnC3Evw7Zj9EkIraokKWra58lKs3iYZe63V45MKI"}`
+        }
+      }
+    );
+    if (!response.ok) {
+      throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      store.setState({ errorMessage: error.message });
+    }
+    return {};
+  }
+};
 function SearchBarRender() {
   const params = new URLSearchParams(window.location.search);
   const queryValue = params.get("query") || "";
@@ -161,6 +192,7 @@ function SearchBarMount() {
           query,
           searchedMoviesLength: searchedMovies.total_results
         });
+        window.scrollTo({ top: 0 });
       }
     });
   }
@@ -199,11 +231,184 @@ function FooterRender() {
   `
   );
 }
-function BannerRender({ vote_average, title }) {
+function MovieItemRender({ id, poster_path, title, vote_average }) {
+  const imageUrl = poster_path ? `${"https://image.tmdb.org/t/p/w500"}${poster_path}` : "./images/logo.png";
   return (
     /* html */
     `
-    <div id="banner" class="background-container">
+    <li data-movie-id="${id}">
+      <div class="item">
+        <img class="thumbnail" src="${imageUrl}" alt="${title}" />
+        <div class="item-desc">
+          <p class="rate">
+            <img src="./images/star_empty.png" class="star" />
+            <span>${vote_average}</span>
+          </p>
+          <strong>${title}</strong>
+        </div>
+      </div>
+    </li>
+  `
+  );
+}
+function MovieItemMount() {
+  const $movieItems = document.querySelectorAll("li[data-movie-id]");
+  $movieItems.forEach((item) => {
+    item.addEventListener("click", async () => {
+      const movieId = item.getAttribute("data-movie-id");
+      openDetailModal(movieId);
+    });
+  });
+}
+function DetailModalRender(movie) {
+  if (!movie) return "";
+  return (
+    /* html */
+    `
+    <div class="modal-background active" id="$modalBackground" data-movie-id="${movie.id}">
+      <div class="modal">
+        <button class="close-modal" id="closeModal">
+          <img src="./images/modal_button_close.png" />
+        </button>
+        <div class="modal-container">
+          <div class="modal-image">
+            <img src="https://image.tmdb.org/t/p/original${movie.poster_path}" alt="${movie.title}" />
+          </div>
+          <div class="modal-description">
+            <div class="modal-description__title">
+              <h2>${movie.title}</h2>
+              <p class="category">
+                ${movie.release_date} · ${movie.genres ? movie.genres.map((g) => g.name).join(", ") : ""}
+              </p>
+              <div class="rate">
+                <span class="rate__title">평균</span>
+                <div class="rate__bar">
+                  <img src="./images/star_filled.png" class="star" />
+                  <span>${movie.vote_average}</span>
+                </div>
+              </div>
+            </div>
+            <hr />
+            <div class="score">
+              <h3 >내 별점</h3>
+              <div class="score__container">
+                <div class="score__stars">
+                  <img src="./images/star_empty.png" class="star" />
+                  <img src="./images/star_empty.png" class="star" />
+                  <img src="./images/star_empty.png" class="star" />
+                  <img src="./images/star_empty.png" class="star" />
+                  <img src="./images/star_empty.png" class="star" />
+                </div>
+                <div class="score__description">
+                  <span class="score__description--text">${SCORE_MESSAGES.CHOICE}</span>
+                  <span class="score__description--score">(<span class="score-number">0</span>/10)</span>
+                </div>
+              </div>
+
+            </div>  
+            <hr/>
+            <div class="detail">
+              <h3>줄거리</h3>
+              ${movie.overview || "등록된 줄거리가 없습니다."}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    `
+  );
+}
+function DetailModalMount() {
+  const $modalBackground = document.getElementById("$modalBackground");
+  if (!$modalBackground) return;
+  const $closeBtn = document.getElementById("closeModal");
+  if ($closeBtn) {
+    $closeBtn.addEventListener("click", () => {
+      $modalBackground.remove();
+    });
+  }
+  $modalBackground.addEventListener("click", (event) => {
+    if (event.target === $modalBackground) {
+      $modalBackground.remove();
+    }
+  });
+  const escHandler = (event) => {
+    if (event.key === "Escape") {
+      $modalBackground.remove();
+      window.removeEventListener("keydown", escHandler);
+    }
+  };
+  window.addEventListener("keydown", escHandler);
+  const $stars = $modalBackground.querySelectorAll(".score__stars .star");
+  const $scoreNumber = $modalBackground.querySelector(".score-number");
+  const $scoreDescriptionText = $modalBackground.querySelector(
+    ".score__description--text"
+  );
+  const movieId = $modalBackground.getAttribute("data-movie-id");
+  if (movieId && $scoreNumber && $scoreDescriptionText) {
+    const storedRating = localStorage.getItem("userRating_" + movieId);
+    if (storedRating) {
+      const ratingValue = parseInt(storedRating, 10);
+      $stars.forEach((star, i) => {
+        star.src = i < ratingValue / 2 ? "./images/star_filled.png" : "./images/star_empty.png";
+      });
+      $scoreNumber.textContent = storedRating;
+      updateScoreDescription(storedRating, $scoreDescriptionText);
+    }
+  }
+  $stars.forEach((star, index) => {
+    star.addEventListener("click", () => {
+      $stars.forEach((star2, i) => {
+        star2.src = i <= index ? "./images/star_filled.png" : "./images/star_empty.png";
+      });
+      const newRating = (index + 1) * 2;
+      if ($scoreNumber) {
+        $scoreNumber.textContent = newRating.toString();
+      }
+      if (movieId) {
+        localStorage.setItem("userRating_" + movieId, newRating.toString());
+      }
+      if ($scoreDescriptionText) {
+        updateScoreDescription(newRating.toString(), $scoreDescriptionText);
+      }
+    });
+  });
+}
+function updateScoreDescription(ratingStr, element) {
+  const rating = Number(ratingStr);
+  if (rating === 2) {
+    element.textContent = SCORE_MESSAGES[2];
+  } else if (rating === 4) {
+    element.textContent = SCORE_MESSAGES[4];
+  } else if (rating === 6) {
+    element.textContent = SCORE_MESSAGES[6];
+  } else if (rating === 8) {
+    element.textContent = SCORE_MESSAGES[8];
+  } else if (rating === 10) {
+    element.textContent = SCORE_MESSAGES[10];
+  } else {
+    element.textContent = SCORE_MESSAGES.CHOICE;
+  }
+}
+async function openDetailModal(movieId) {
+  try {
+    const movieDetail = await fetchMovieDetail(movieId);
+    if (!movieDetail) return;
+    const modalHTML = DetailModalRender(movieDetail);
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+    DetailModalMount();
+  } catch (error) {
+    store.setState({
+      ...store.getState(),
+      errorMessage: ERROR_MESSAGES.MOVIE_FETCH_FAILED
+    });
+  }
+}
+function BannerRender({ vote_average, title, id }) {
+  return (
+    /* html */
+    `
+    <div id="banner" class="background-container" >
       <div class="overlay" aria-hidden="true" ></div>
       <div class="top-rated-container">
         <div class="top-rated-movie">
@@ -212,12 +417,26 @@ function BannerRender({ vote_average, title }) {
             <span class="rate-value">${vote_average}</span>
           </div>
           <div class="title">${title}</div>
-          <button class="primary detail">자세히 보기</button>
+          <button class="primary detail" data-movie-id="${id}">자세히 보기</button>
         </div>
       </div>
     </div>
   `
   );
+}
+function BannerMount() {
+  const $banner = document.getElementById("banner");
+  if ($banner) {
+    $banner.addEventListener("click", async (event) => {
+      const $detailBtn = event.target.closest(".detail");
+      if ($detailBtn) {
+        const movieId = $detailBtn.getAttribute("data-movie-id");
+        if (movieId) {
+          await openDetailModal(movieId);
+        }
+      }
+    });
+  }
 }
 function SkeletonBannerRender() {
   return (
@@ -240,68 +459,6 @@ function ListTitleRender({ query }) {
   `
   );
 }
-function MovieItemRender({ poster_path, title, vote_average }) {
-  const imageUrl = poster_path ? `${"https://image.tmdb.org/t/p/w500"}${poster_path}` : "./images/logo.png";
-  return (
-    /* html */
-    `
-    <li>
-      <div class="item">
-        <img class="thumbnail" src="${imageUrl}" alt="${title}" />
-        <div class="item-desc">
-          <p class="rate">
-            <img src="./images/star_empty.png" class="star" />
-            <span>${vote_average}</span>
-          </p>
-          <strong>${title}</strong>
-        </div>
-      </div>
-    </li>
-  `
-  );
-}
-function MoreButtonRender() {
-  return (
-    /* html */
-    `
-    <button id="more-button" class="primary more" data-testid="more-button">더 보기</button>
-  `
-  );
-}
-function MoreButtonMount() {
-  const $button = document.querySelector("#more-button");
-  if ($button) {
-    $button.addEventListener("click", async () => {
-      const state = store.getState();
-      const currentPage = Math.floor(state.movies.length / MOVIE_COUNT.UNIT) + 1;
-      store.setState({ ...state, isLoading: true });
-      if (!state.query) {
-        const newMovies = await fetchPopularMovies(currentPage);
-        store.setState({
-          ...store.getState(),
-          movies: [...state.movies, ...newMovies],
-          isLoading: false
-        });
-        if (state.movies.length >= MOVIE_COUNT.MAX_PAGE * MOVIE_COUNT.UNIT) {
-          $button.remove();
-        }
-      } else {
-        const newMoviesData = await fetchSearchedMovies(
-          state.query,
-          currentPage
-        );
-        store.setState({
-          ...store.getState(),
-          movies: [...state.movies, ...newMoviesData.results],
-          isLoading: false
-        });
-        if (state.movies.length >= state.searchedMoviesLength) {
-          $button.remove();
-        }
-      }
-    });
-  }
-}
 function SkeletonMovieItemRender() {
   return (
     /* html */
@@ -316,43 +473,84 @@ function SkeletonMovieItemRender() {
   `
   );
 }
+async function fetchMoreMovies(currentPage) {
+  const state = store.getState();
+  if (!state.query) {
+    const newMovies = await fetchPopularMovies(currentPage);
+    store.setState({
+      ...store.getState(),
+      movies: [...state.movies, ...newMovies],
+      isLoading: false
+    });
+  } else {
+    const newMoviesData = await fetchSearchedMovies(state.query, currentPage);
+    store.setState({
+      ...store.getState(),
+      movies: [...state.movies, ...newMoviesData.results],
+      isLoading: false
+    });
+  }
+}
 function MovieListRender({
   movies,
   query,
   searchedMoviesLength,
   isLoading
 }) {
-  const showMoreButton = !query || movies.length < searchedMoviesLength;
   let movieContent = "";
   if (isLoading) {
-    movieContent = new Array(MOVIE_COUNT.UNIT).fill(0).map(() => SkeletonMovieItemRender()).join("");
+    movieContent = /* html */
+    `
+       <ul id="movie-list" class="thumbnail-list" data-testid="movie-list">
+          ${new Array(MOVIE_COUNT.UNIT).fill(0).map(() => SkeletonMovieItemRender()).join("")}
+        </ul>
+      `;
   } else if (movies.length === 0 && query) {
-    movieContent = `<div></div>
-                    <div></div>
-                    <div class="center">
-                      <img src="./images/not_found.png"/>
-                      <h2 data-testid='no-result-message'>${ERROR_MESSAGES.NO_RESULT}</h2>
-                    </div>`;
+    movieContent = /* html */
+    `
+        <div class="not-found-movie">
+          <img src="./images/not_found.png"/>
+          <h2 data-testid='no-result-message'>${ERROR_MESSAGES.NO_RESULT}</h2>
+        </div>
+        <ul id="movie-list" class="thumbnail-list" data-testid="movie-list"></ul>
+      `;
   } else {
-    movieContent = movies.map((movie) => MovieItemRender(movie)).join("");
+    movieContent = /* html */
+    `
+        <ul id="movie-list" class="thumbnail-list" data-testid="movie-list">
+          ${movies.map((movie) => MovieItemRender(movie)).join("")}
+        </ul>
+    `;
   }
   return (
     /* html */
     `
     <main>
-      <section>
+      <section class="movie-list-container">
         ${ListTitleRender({ query })}
-        <ul id="movie-list" class="thumbnail-list" data-testid="movie-list">
-          ${movieContent}
-        </ul>
-        ${showMoreButton ? MoreButtonRender() : ""}
+        ${movieContent}
       </section>
     </main>
   `
   );
 }
 function MovieListMount() {
-  MoreButtonMount();
+  MovieItemMount();
+  window.addEventListener("scroll", async () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+      const state = store.getState();
+      const currentPage = Math.floor(state.movies.length / MOVIE_COUNT.UNIT) + 1;
+      if (state.isLoading) return;
+      if (!state.query && state.movies.length >= MOVIE_COUNT.MAX_PAGE * MOVIE_COUNT.UNIT) {
+        return;
+      }
+      if (state.query && state.movies.length >= state.searchedMoviesLength) {
+        return;
+      }
+      store.setState({ ...state, isLoading: true });
+      await fetchMoreMovies(currentPage);
+    }
+  });
 }
 async function initializeMovieDomain() {
   const state = store.getState();
@@ -435,6 +633,7 @@ class App {
   mount() {
     HeaderMount();
     mountMovieDomain();
+    BannerMount();
     const state = store.getState();
     const $banner = document.querySelector("#banner");
     if (state.movies.length && $banner) {
