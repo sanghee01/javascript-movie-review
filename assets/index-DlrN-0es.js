@@ -65,9 +65,27 @@ class Store {
     this.subscribers.push(fn);
     fn(this.state);
   }
+  initialSubscribe(subscribers) {
+    subscribers.forEach((fn) => fn(this.state));
+  }
   setState(newState) {
     this.state = { ...this.state, ...newState };
-    this.subscribers.forEach((fn) => fn(this.state));
+    this.initialSubscribe(this.subscribers);
+  }
+  setMovies(movies) {
+    this.setState({ ...this.state, movies });
+  }
+  setQuery(query) {
+    this.setState({ ...this.state, query });
+  }
+  setSearchedMoviesLength(searchedMoviesLength) {
+    this.setState({ ...this.state, searchedMoviesLength });
+  }
+  setLoading(isLoading) {
+    this.setState({ ...this.state, isLoading });
+  }
+  setErrorMessage(errorMessage) {
+    this.setState({ ...this.state, errorMessage });
   }
   getState() {
     return this.state;
@@ -80,10 +98,19 @@ const store = new Store({
   isLoading: false,
   errorMessage: ""
 });
-const fetchPopularMovies = async (page = 1) => {
+const fetchAPI = async ({
+  url,
+  params
+}) => {
+  const query = params ? `?${new URLSearchParams(
+    Object.entries(params).reduce((acc, [key, value]) => {
+      acc[key] = String(value);
+      return acc;
+    }, {})
+  ).toString()}` : "";
   try {
     const response = await fetch(
-      `${"https://api.themoviedb.org/3"}/movie/popular?language=ko-KR&page=${page}`,
+      `${"https://api.themoviedb.org/3"}${url}${query}`,
       {
         method: "GET",
         headers: {
@@ -91,63 +118,39 @@ const fetchPopularMovies = async (page = 1) => {
         }
       }
     );
-    if (!response.ok) {
-      throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
-    }
-    const data = await response.json();
-    return data.results;
+    if (!response.ok) throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
+    return await response.json();
   } catch (error) {
     if (error instanceof Error) {
-      store.setState({ errorMessage: error.message });
-    }
-    return [];
-  }
-};
-const fetchSearchedMovies = async (query, page = 1) => {
-  try {
-    const response = await fetch(
-      `${"https://api.themoviedb.org/3"}/search/movie?query=${query}&include_adult=false&language=ko-KR&page=${page}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzNjM3Yjc0MTQ4Y2MwYTE1MTJiOGRmNzQxZWEwNmY3OCIsIm5iZiI6MTYyODg0NjUzOC4zNDA5OTk4LCJzdWIiOiI2MTE2MzljYTk5ZDVjMzAwNDZlZmE2YzQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.9iAbnC3Evw7Zj9EkIraokKWra58lKs3iYZe63V45MKI"}`
-        }
-      }
-    );
-    if (!response.ok) {
-      throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      store.setState({ errorMessage: error.message });
+      store.setErrorMessage(error.message);
     }
     return null;
   }
 };
+const fetchPopularMovies = async (page = 1) => {
+  const data = await fetchAPI({
+    url: "/movie/popular",
+    params: { language: "ko-KR", page }
+  });
+  return (data == null ? void 0 : data.results) ?? [];
+};
+const fetchSearchedMovies = async (query, page = 1) => {
+  return await fetchAPI({
+    url: "/search/movie",
+    params: {
+      query,
+      include_adult: "false",
+      language: "ko-KR",
+      page
+    }
+  });
+};
 const fetchMovieDetail = async (movieId) => {
-  try {
-    const response = await fetch(
-      `${"https://api.themoviedb.org/3"}/movie/${movieId}?language=ko-KR`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzNjM3Yjc0MTQ4Y2MwYTE1MTJiOGRmNzQxZWEwNmY3OCIsIm5iZiI6MTYyODg0NjUzOC4zNDA5OTk4LCJzdWIiOiI2MTE2MzljYTk5ZDVjMzAwNDZlZmE2YzQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.9iAbnC3Evw7Zj9EkIraokKWra58lKs3iYZe63V45MKI"}`
-        }
-      }
-    );
-    if (!response.ok) {
-      throw new Error(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      store.setState({ errorMessage: error.message });
-    }
-    return {};
-  }
+  const data = await fetchAPI({
+    url: `/movie/${movieId}`,
+    params: { language: "ko-KR" }
+  });
+  return data ?? {};
 };
 function SearchBarRender() {
   const params = new URLSearchParams(window.location.search);
@@ -187,11 +190,9 @@ function SearchBarMount() {
       window.history.pushState({}, "", url);
       const searchedMovies = await fetchSearchedMovies(query);
       if (searchedMovies) {
-        store.setState({
-          movies: searchedMovies.results,
-          query,
-          searchedMoviesLength: searchedMovies.total_results
-        });
+        store.setMovies(searchedMovies.results);
+        store.setQuery(query);
+        store.setSearchedMoviesLength(searchedMovies.total_results);
         window.scrollTo({ top: 0 });
       }
     });
@@ -241,7 +242,7 @@ function MovieItemRender({ id, poster_path, title, vote_average }) {
         <img class="thumbnail" src="${imageUrl}" alt="${title}" />
         <div class="item-desc">
           <p class="rate">
-            <img src="./images/star_empty.png" class="star" />
+            <img class="star" src="./images/star_empty.png" alt="star" />
             <span>${vote_average}</span>
           </p>
           <strong>${title}</strong>
@@ -398,10 +399,7 @@ async function openDetailModal(movieId) {
     document.body.insertAdjacentHTML("beforeend", modalHTML);
     DetailModalMount();
   } catch (error) {
-    store.setState({
-      ...store.getState(),
-      errorMessage: ERROR_MESSAGES.MOVIE_FETCH_FAILED
-    });
+    store.setErrorMessage(ERROR_MESSAGES.MOVIE_FETCH_FAILED);
   }
 }
 function BannerRender({ vote_average, title, id }) {
@@ -477,20 +475,24 @@ async function fetchMoreMovies(currentPage) {
   const state = store.getState();
   if (!state.query) {
     const newMovies = await fetchPopularMovies(currentPage);
-    store.setState({
-      ...store.getState(),
-      movies: [...state.movies, ...newMovies],
-      isLoading: false
-    });
+    store.setLoading(false);
+    store.setMovies([...state.movies, ...newMovies]);
   } else {
     const newMoviesData = await fetchSearchedMovies(state.query, currentPage);
-    store.setState({
-      ...store.getState(),
-      movies: [...state.movies, ...newMoviesData.results],
-      isLoading: false
-    });
+    store.setLoading(false);
+    store.setMovies([...state.movies, ...newMoviesData.results]);
   }
 }
+const throttle = (callback, delayTime) => {
+  let timerId;
+  return () => {
+    if (timerId) return;
+    timerId = setTimeout(() => {
+      callback();
+      timerId = null;
+    }, delayTime);
+  };
+};
 function MovieListRender({
   movies,
   query,
@@ -536,28 +538,32 @@ function MovieListRender({
 }
 function MovieListMount() {
   MovieItemMount();
-  window.addEventListener("scroll", async () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
-      const state = store.getState();
-      const currentPage = Math.floor(state.movies.length / MOVIE_COUNT.UNIT) + 1;
-      if (state.isLoading) return;
-      if (!state.query && state.movies.length >= MOVIE_COUNT.MAX_PAGE * MOVIE_COUNT.UNIT) {
-        return;
+  window.addEventListener(
+    "scroll",
+    throttle(async () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+        const state = store.getState();
+        const currentPage = Math.floor(state.movies.length / MOVIE_COUNT.UNIT) + 1;
+        if (state.isLoading) return;
+        if (!state.query && state.movies.length >= MOVIE_COUNT.MAX_PAGE * MOVIE_COUNT.UNIT) {
+          return;
+        }
+        if (state.query && state.movies.length >= state.searchedMoviesLength) {
+          return;
+        }
+        store.setLoading(true);
+        await fetchMoreMovies(currentPage);
       }
-      if (state.query && state.movies.length >= state.searchedMoviesLength) {
-        return;
-      }
-      store.setState({ ...state, isLoading: true });
-      await fetchMoreMovies(currentPage);
-    }
-  });
+    }, 1e3)
+  );
 }
 async function initializeMovieDomain() {
   const state = store.getState();
   if (state.movies.length === 0) {
-    store.setState({ ...state, isLoading: true });
+    store.setLoading(true);
     const movies = await fetchPopularMovies();
-    store.setState({ ...store.getState(), movies, isLoading: false });
+    store.setLoading(false);
+    store.setMovies(movies);
   }
 }
 function renderMovieDomain() {
@@ -575,27 +581,22 @@ function mountMovieDomain() {
 async function syncSearchStateWithURL() {
   const params = new URLSearchParams(window.location.search);
   const query = params.get("query");
-  store.setState({ ...store.getState(), isLoading: true });
+  store.setLoading(true);
   if (query) {
     const searchedMovies = await fetchSearchedMovies(query);
     if (searchedMovies) {
-      store.setState({
-        movies: searchedMovies.results,
-        query,
-        searchedMoviesLength: searchedMovies.total_results,
-        isLoading: false
-      });
+      store.setLoading(false);
+      store.setMovies(searchedMovies.results);
+      store.setQuery(query);
+      store.setSearchedMoviesLength(searchedMovies.total_results);
     } else {
-      store.setState({ ...store.getState(), isLoading: false });
+      store.setLoading(false);
     }
   } else {
-    store.setState({
-      ...store.getState(),
-      movies: [],
-      query: "",
-      searchedMoviesLength: 0,
-      isLoading: true
-    });
+    store.setLoading(true);
+    store.setMovies([]);
+    store.setQuery("");
+    store.setSearchedMoviesLength(0);
     await initializeMovieDomain();
   }
 }
@@ -625,7 +626,7 @@ class App {
     this.mount();
     if (state.errorMessage && !this.toastTimeout) {
       this.toastTimeout = setTimeout(() => {
-        store.setState({ ...store.getState(), errorMessage: null });
+        store.setErrorMessage(state.errorMessage);
         this.toastTimeout = null;
       }, 3e3);
     }
